@@ -1,61 +1,94 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Task Manager – Login</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login - TaskTracker</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
-  <link rel="stylesheet" href="static/css/login.css"> 
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/login.css') }}">
 </head>
 <body>
-  <!-- error message  -->
-      {% with messages = get_flashed_messages(with_categories=true) %}
-  {% if messages %}
-    <ul class="flashes">
-      {% for category, message in messages %}
-        <li class="{{ category }}">{{ message }}</li>
-      {% endfor %}
-    </ul>
-  {% endif %}
-{% endwith %}
 
-<div class="top-right-home">
-  <a href="/">Home</a>
-</div>
+  <div class="auth-page">
 
-  <div class="outer-container">
-    <div class="left-section">
-      <img src="static/images/login img.jpg" alt="Illustration" />
+    <!-- Left: Branding Panel -->
+    <div class="auth-brand-panel">
+      <div class="brand-content">
+        <div class="logo-icon">
+          <i class="fas fa-tasks"></i>
+        </div>
+        <h1>TaskTracker</h1>
+        <p>Your smart productivity companion. Organize tasks, track time, and achieve more every day.</p>
+
+        <div class="brand-features">
+          <div class="brand-feature">
+            <div class="feat-icon"><i class="fas fa-chart-line"></i></div>
+            <span>Real-time analytics & insights</span>
+          </div>
+          <div class="brand-feature">
+            <div class="feat-icon"><i class="fas fa-clock"></i></div>
+            <span>Built-in time tracking</span>
+          </div>
+          <div class="brand-feature">
+            <div class="feat-icon"><i class="fas fa-file-export"></i></div>
+            <span>Export reports in PDF & CSV</span>
+          </div>
+        </div>
+      </div>
     </div>
-   
-    <div class="right-section">
-      <div class="container">
-        <h1><i   style="color: purple;" class="fas fa-clipboard-list"></i> Task Manager</h1>
+
+    <!-- Right: Login Form -->
+    <div class="auth-form-panel">
+      <div class="auth-card">
+
+        <div class="welcome-text">
+          <h2>Welcome back</h2>
+          <p>Sign in to your account to continue</p>
+        </div>
+
+        <!-- Flash Messages -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+          {% if messages %}
+            <div class="flash-messages">
+              {% for category, message in messages %}
+                <div class="flash-msg {{ category }}">{{ message }}</div>
+              {% endfor %}
+            </div>
+          {% endif %}
+        {% endwith %}
 
         <form method="POST" action="/login">
-          <div>
-            <label for="email">Email<span>*</span></label>
-            <input type="email" id="email" name="email" placeholder="Enter your email" required>
+          <div class="form-field">
+            <label for="email">Email <span>*</span></label>
+            <div class="input-wrapper">
+              <i class="fas fa-envelope"></i>
+              <input type="email" id="email" name="email" placeholder="you@example.com" required>
+            </div>
           </div>
-          <div>
-            <label for="password">Password<span>*</span></label>
-            <input type="password" id="password" name="password" placeholder="Enter your password" required>
+
+          <div class="form-field">
+            <label for="password">Password <span>*</span></label>
+            <div class="input-wrapper">
+              <i class="fas fa-lock"></i>
+              <input type="password" id="password" name="password" placeholder="Enter your password" required>
+            </div>
           </div>
-          <button type="submit" class="continue-btn">Login</button>
+
+          <button type="submit" class="submit-btn">Sign In</button>
         </form>
 
-        <div class="center">or</div>
-
-        <a href="/login/google" class="google-btn">
-          <img src="https://developers.google.com/identity/images/g-logo.png" alt="Google logo">
-          Continue with Google
-        </a>
-
-        <div class="center" style="margin-top: 20px;">
-          If you don’t have an account? <a href="/signup">Sign up here</a>
+        <div class="auth-footer">
+          Don't have an account? <a href="/signup">Create one</a>
         </div>
-        <div class="line"></div>
+
+        <div class="about-link">
+          <a href="/about">About TaskTracker</a>
+        </div>
+
+      </div>
     </div>
+
   </div>
+
 </body>
 </html>

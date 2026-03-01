@@ -1,6 +1,4 @@
-
-//  Tab Switching
-
+// ===== Tab Switching =====
 function showTab(tabId) {
   document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
   document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
@@ -16,8 +14,7 @@ function showTab(tabId) {
   }
 }
 
-
-// Modal Controls
+// ===== Modal Controls =====
 function openTaskModal() {
   document.getElementById('taskModal')?.classList.add('show');
 }
@@ -31,7 +28,7 @@ function resetModalToAddMode() {
   const form = document.getElementById('taskForm');
   if (!form) return;
 
-  document.querySelector('.modal-header h3').textContent = '✏️ Add New Task';
+  document.querySelector('.modal-header h3').textContent = 'Add New Task';
   form.action = '/add-task';
   form.reset();
 
@@ -45,42 +42,42 @@ window.addEventListener('click', e => {
   if (e.target === modal) closeTaskModal();
 });
 
-
-// Edit Task
+// ===== Edit Task =====
 function editTask(taskId) {
   const card = document.querySelector(`[data-task-id="${taskId}"]`);
   if (!card) return;
 
-  document.getElementById('title').value = card.querySelector('.task-title')?.textContent || '';
-  document.getElementById('description').value = card.querySelector('.task-desc')?.textContent || '';
-  document.getElementById('priority').value = card.querySelector('.priority-badge')?.textContent || 'Medium';
+  document.getElementById('title').value = card.querySelector('.task-title')?.textContent.trim() || '';
+  document.getElementById('description').value = card.querySelector('.task-desc')?.textContent.trim() || '';
+
+  const priorityText = card.querySelector('.priority-badge p')?.textContent.trim() || 'Medium';
+  document.getElementById('priority').value = priorityText;
 
   const dueText = card.querySelector('.task-info p:nth-child(1)')?.textContent || '';
   const timeText = card.querySelector('.task-info p:nth-child(2)')?.textContent || '';
   const isCompleted = card.querySelector('.status-complete') !== null;
 
-  const dueDate = dueText.replace('Due: ', '').trim();
-  const estTime = timeText.replace('Estimated: ', '').replace(' hrs', '').trim();
+  const dueDate = dueText.replace('Due:', '').trim();
+  const estTime = timeText.replace('Estimated:', '').replace('hrs', '').trim();
 
   document.getElementById('due_date').value = dueDate !== 'No due date' ? dueDate : '';
   document.getElementById('time_spent').value = estTime;
   document.getElementById('completed').value = isCompleted ? 'True' : 'False';
 
-  document.querySelector('.modal-header h3').textContent = '✏️ Edit Task';
+  document.querySelector('.modal-header h3').textContent = 'Edit Task';
   document.getElementById('taskForm').action = `/edit-task/${taskId}`;
   document.querySelector('.btn-primary').innerHTML = '<i class="fas fa-save"></i> Update Task';
 
   openTaskModal();
 }
 
-
-// Task Filter & Sort
+// ===== Task Filter & Sort =====
 function filterTasks() {
   const query = document.getElementById('task-search').value.toLowerCase();
   document.querySelectorAll('.task-card').forEach(card => {
     const title = card.querySelector('h4')?.innerText.toLowerCase() || '';
-    const desc = card.querySelector('p')?.innerText.toLowerCase() || '';
-    card.style.display = title.includes(query) || desc.includes(query) ? 'block' : 'none';
+    const desc = card.querySelector('.task-desc')?.innerText.toLowerCase() || '';
+    card.style.display = title.includes(query) || desc.includes(query) ? '' : 'none';
   });
 }
 
@@ -89,13 +86,16 @@ function applySort() {
   const container = document.getElementById('task-list');
   const tasks = Array.from(container.getElementsByClassName('task-card'));
 
-  const priorityOrder = { 'High': 1, 'Medium': 2, 'Low': 3 };
+  const priorityOrder = { 'high': 1, 'medium': 2, 'low': 3 };
 
   tasks.sort((a, b) => {
+    const aPriority = a.dataset.priority || '';
+    const bPriority = b.dataset.priority || '';
+
     if (type === 'newest') return new Date(b.dataset.created) - new Date(a.dataset.created);
     if (type === 'oldest') return new Date(a.dataset.created) - new Date(b.dataset.created);
     if (['high', 'medium', 'low'].includes(type)) {
-      return priorityOrder[a.dataset.priority] - priorityOrder[b.dataset.priority];
+      return (priorityOrder[aPriority] || 99) - (priorityOrder[bPriority] || 99);
     }
     return 0;
   });
@@ -103,8 +103,7 @@ function applySort() {
   tasks.forEach(task => container.appendChild(task));
 }
 
-
-// Time Tracking
+// ===== Time Tracking =====
 const timers = {};
 const intervals = {};
 
@@ -151,11 +150,30 @@ function logTime(taskId) {
     .catch(() => alert('Failed to log time.'));
 }
 
+// ===== Analytics (Chart.js) =====
+let chartsInitialized = false;
 
-// Analytics (Chart.js)
 function initializeAnalytics() {
-  const parse = id => JSON.parse(document.getElementById(id)?.textContent || '[]');
+  if (chartsInitialized) return;
+  chartsInitialized = true;
 
+  const parse = id => {
+    try {
+      return JSON.parse(document.getElementById(id)?.textContent || '[]');
+    } catch (e) {
+      return [];
+    }
+  };
+
+  // Purple color palette
+  const purple = {
+    primary: 'rgba(124, 58, 237, 0.7)',
+    primaryBorder: 'rgba(124, 58, 237, 1)',
+    light: 'rgba(168, 85, 247, 0.6)',
+    lightBorder: 'rgba(168, 85, 247, 1)',
+  };
+
+  // Tasks per Day
   new Chart(document.getElementById('taskCreationChart'), {
     type: 'bar',
     data: {
@@ -163,99 +181,98 @@ function initializeAnalytics() {
       datasets: [{
         label: 'Tasks per Day',
         data: parse('dailyData'),
-        backgroundColor: 'rgba(54, 162, 235, 0.6)',
-        borderColor: 'rgba(54, 162, 235, 1)',
-        borderWidth: 1
+        backgroundColor: purple.primary,
+        borderColor: purple.primaryBorder,
+        borderWidth: 2,
+        borderRadius: 6,
       }]
     },
-    options: { responsive: true, scales: { y: { beginAtZero: true } } }
+    options: {
+      responsive: true,
+      plugins: { legend: { display: false } },
+      scales: {
+        y: { beginAtZero: true, ticks: { stepSize: 1 } },
+        x: { grid: { display: false } }
+      }
+    }
   });
 
+  // Priority Distribution
+  const priorityData = parse('priorityData');
   new Chart(document.getElementById('priorityChart'), {
     type: 'doughnut',
     data: {
-      labels: Object.keys(parse('priorityData')),
+      labels: Object.keys(priorityData),
       datasets: [{
-        data: Object.values(parse('priorityData')),
-        backgroundColor: ['#ff6384', '#ffcd56', '#4bc0c0']
+        data: Object.values(priorityData),
+        backgroundColor: ['#ef4444', '#f59e0b', '#22c55e'],
+        borderWidth: 0,
+        spacing: 4,
       }]
     },
-    options: { responsive: true }
+    options: {
+      responsive: true,
+      cutout: '65%',
+      plugins: {
+        legend: { position: 'bottom', labels: { padding: 16, usePointStyle: true } }
+      }
+    }
   });
 
+  // Completion Rate
+  const completionData = parse('completionData');
   new Chart(document.getElementById('completionChart'), {
-    type: 'pie',
+    type: 'doughnut',
     data: {
-      labels: Object.keys(parse('completionData')),
+      labels: ['Completed', 'Pending'],
       datasets: [{
-        data: Object.values(parse('completionData')),
-        backgroundColor: ['#36a2eb', '#ff9f40']
+        data: [completionData.completed || 0, completionData.pending || 0],
+        backgroundColor: ['#7c3aed', '#e5e7eb'],
+        borderWidth: 0,
+        spacing: 4,
       }]
     },
-    options: { responsive: true }
+    options: {
+      responsive: true,
+      cutout: '65%',
+      plugins: {
+        legend: { position: 'bottom', labels: { padding: 16, usePointStyle: true } }
+      }
+    }
   });
 
+  // Estimated vs Actual Time
   new Chart(document.getElementById('timeChart'), {
     type: 'bar',
     data: {
       labels: parse('timeLabels'),
       datasets: [
         {
-          label: 'Estimated Hours',
+          label: 'Estimated',
           data: parse('estimatedTimes'),
-          backgroundColor: 'rgba(153, 102, 255, 0.6)'
+          backgroundColor: purple.primary,
+          borderRadius: 6,
         },
         {
-          label: 'Actual Hours',
+          label: 'Actual',
           data: parse('actualTimes'),
-          backgroundColor: 'rgba(255, 99, 132, 0.6)'
+          backgroundColor: purple.light,
+          borderRadius: 6,
         }
       ]
     },
-    options: { responsive: true, scales: { y: { beginAtZero: true } } }
+    options: {
+      responsive: true,
+      plugins: {
+        legend: { position: 'bottom', labels: { padding: 16, usePointStyle: true } }
+      },
+      scales: {
+        y: { beginAtZero: true },
+        x: { grid: { display: false } }
+      }
+    }
   });
 }
 
-
-// Report Downloads
-function downloadPDFReport() {
-  const { jsPDF } = window.jspdf;
-  const doc = new jsPDF();
-
-  doc.text("Task Report", 14, 14);
-
-  const rows = [];
-  document.querySelectorAll("#reports-tab tbody tr").forEach(tr => {
-    const row = Array.from(tr.children).map(td => td.innerText);
-    rows.push(row);
-  });
-
-  doc.autoTable({
-    head: [['Title', 'Status', 'Priority', 'Due Date', 'Est Time', 'Act Time']],
-    body: rows,
-    startY: 20
-  });
-
-  doc.save("task_report.pdf");
-}
-
-function downloadCSVReport() {
-  let csv = "Title,Status,Priority,Due Date,Estimated Time,Actual Time\n";
-
-  document.querySelectorAll("#reports-tab tbody tr").forEach(tr => {
-    const row = Array.from(tr.children).map(td => `"${td.innerText}"`).join(",");
-    csv += row + "\n";
-  });
-
-  const blob = new Blob([csv], { type: 'text/csv' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = 'task_report.csv';
-  a.click();
-  URL.revokeObjectURL(url);
-}
-
-
-// Default Tab Load
+// ===== Default Tab Load =====
 document.addEventListener('DOMContentLoaded', () => showTab('tasks'));

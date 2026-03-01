@@ -26,18 +26,27 @@ login_manager = LoginManager()
 login_manager.init_app(app)
 login_manager.login_view = 'login_page'
 
-# Google OAuth code
+# Google OAuth code (optional)
 oauth = OAuth(app)
-with open('client_secret.json', 'r') as f:
-    credentials = json.load(f)['web']
+google = None
 
-google = oauth.register(
-    name='google',
-    client_id=credentials['client_id'],
-    client_secret=credentials['client_secret'],
-    server_metadata_url='https://accounts.google.com/.well-known/openid-configuration',
-    client_kwargs={'scope': 'openid email profile'}
-)
+if os.path.exists('client_secret.json'):
+    try:
+        with open('client_secret.json', 'r') as f:
+            credentials = json.load(f)['web']
+        
+        google = oauth.register(
+            name='google',
+            client_id=credentials['client_id'],
+            client_secret=credentials['client_secret'],
+            server_metadata_url='https://accounts.google.com/.well-known/openid-configuration',
+            client_kwargs={'scope': 'openid email profile'}
+        )
+        print("[INFO] Google OAuth configured successfully")
+    except Exception as e:
+        print(f"[WARNING] Could not configure Google OAuth: {e}")
+else:
+    print("[INFO] client_secret.json not found. Google OAuth disabled.")
 
 # User Loader
 @login_manager.user_loader
@@ -49,7 +58,7 @@ def load_user(user_id):
 
 @app.route('/')
 def home():
-    return render_template('home.html')
+    return redirect(url_for('login_page'))
 
 @app.route('/about')
 def about():
@@ -110,12 +119,20 @@ def signup():
 
 @app.route('/login/google')
 def login_with_google():
+    if not google:
+        flash('Google OAuth is not configured on this server.', 'warning')
+        return redirect(url_for('login_page'))
+    
     session.pop('_google_authlib_state_', None)  # Clear CSRF token if present
     redirect_uri = url_for('authorize', _external=True)
     return google.authorize_redirect(redirect_uri, prompt='select_account')
 
 @app.route('/authorize')
 def authorize():
+    if not google:
+        flash('Google OAuth is not configured on this server.', 'warning')
+        return redirect(url_for('login_page'))
+    
     try:
         token = google.authorize_access_token()
         resp = google.get('https://www.googleapis.com/oauth2/v1/userinfo')
